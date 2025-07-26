@@ -1,8 +1,38 @@
+# trigger:
+# - main
+
+# pool:
+#   vmImage: 'ubuntu-latest'
+
+# steps:
+# - task: UsePythonVersion@0
+#   inputs:
+#     versionSpec: '3.x'
+#     addToPath: true
+
+# - script: |
+#     python -m pip install --upgrade pip
+#     pip install -r requirements.txt
+#   displayName: 'Install dependencies'
+
+# - script: |
+#     pytest test_ownprep_login_and_learn.py --html=report.html
+#   displayName: 'Run tests and generate report'
+
+# - task: PublishBuildArtifacts@1
+#   inputs:
+#     PathtoPublish: '$(System.DefaultWorkingDirectory)'
+#     ArtifactName: 'TestResults'
+#     publishLocation: 'Container'
+
 trigger:
-- main
+- main  # Change this to your branch name if different
 
 pool:
   vmImage: 'ubuntu-latest'
+
+variables:
+  CHROME_BIN: "/usr/bin/google-chrome"
 
 steps:
 - task: UsePythonVersion@0
@@ -11,16 +41,24 @@ steps:
     addToPath: true
 
 - script: |
-    python -m pip install --upgrade pip
-    pip install -r requirements.txt
-  displayName: 'Install dependencies'
+    sudo apt-get update
+    sudo apt-get install -y wget unzip
+    sudo apt-get install -y chromium-browser
+    sudo apt-get install -y xvfb
+    echo "CHROME_BIN=$CHROME_BIN"
+  displayName: 'Install Chromium and dependencies'
 
 - script: |
-    pytest test_ownprep_login_and_learn.py --html=report.html
-  displayName: 'Run tests and generate report'
+    python -m pip install --upgrade pip
+    pip install -r requirements.txt
+  displayName: 'Install Python dependencies'
+
+- script: |
+    xvfb-run pytest test_ownprep_login_and_learn.py --html=report.html
+  displayName: 'Run Selenium test with Pytest (headless) and generate HTML report'
 
 - task: PublishBuildArtifacts@1
   inputs:
-    PathtoPublish: '$(System.DefaultWorkingDirectory)'
-    ArtifactName: 'TestResults'
+    PathtoPublish: '$(System.DefaultWorkingDirectory)/report.html'
+    ArtifactName: 'TestReport'
     publishLocation: 'Container'
